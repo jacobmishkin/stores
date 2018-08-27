@@ -30,8 +30,7 @@ exports.upload = multer(multerOptions).single('photo');
 exports.resize = async (req, res, next) => {
   // check if there is no new file to resize
   if (!req.file) {
-    next(); // skip to the next middleware
-    return;
+    return next(); // skip to the next middleware
   }
   const extension = req.file.mimetype.split('/')[1];
   req.body.photo = `${uuid.v4()}.${extension}`;
@@ -82,3 +81,12 @@ exports.getStoreBySlug = async (req, res) => {
   if(!store) return next(); //if no store move it along.
   res.render('store', {store, title: store.name});
 };
+
+exports.getStoresByTag = async (req, res) => {
+  const tag = req.params.tag;
+  const tagQuery = tag || {$exists: true}
+  const tagsPromise = Store.getTagsList();
+  const storesPromise = Store.find({tags: tagQuery});
+  const [tags, stores] = await Promise.all([tagsPromise, storesPromise]);
+  res.render('tag', {tags, title: 'Tags', tag, stores});
+}
