@@ -20,28 +20,28 @@ exports.validateRegister = (req, res, next) => {
     gmail_remove_subaddress: false,
 
   });
-  req.checkBody('password', 'Password can not be blank!' ).notEmpty();
+  req.checkBody('password', 'Password can not be blank!').notEmpty();
   req.checkBody('password-confirm', 'The confirm password can not be blank').notEmpty();
   req.checkBody('password-confirm', 'Ooops! Your passwords do not match').equals(req.body.password);
 
   const errors = req.validationErrors();
   if (errors) {
     req.flash('error', errors.map(err => err.msg));
-    res.render('register', {title: 'Register', body: req.body, flashes:req.flash()});
+    res.render('register', { title: 'Register', body: req.body, flashes: req.flash() });
     return; //stop the function from running
   };
   next();//no errors
 };
 
 exports.register = async (req, res, next) => {
-  const user = new User({email: req.body.email, name: req.body.name});
+  const user = new User({ email: req.body.email, name: req.body.name });
   const register = promisify(User.register, User);
   await register(user, req.body.password);
   next();
 };
 
 exports.account = (req, res) => {
-  res.render('account', {title: 'Edit your account'});
+  res.render('account', { title: 'Edit your account' });
 };
 
 exports.updateAccount = async (req, res) => {
@@ -51,10 +51,10 @@ exports.updateAccount = async (req, res) => {
   };
 
   const user = await User.findOneAndUpdate(
-    { _id: req.user.id },
-    {$set: updates},
-    {new: true, runValidators: true, context: 'query' }
+    { _id: req.user._id },
+    { $set: updates },
+    { new: true, runValidators: true, context: 'query' }
   );
-  req.flash('Success', 'Your account has been updated!')
+  req.flash('success', 'Updated the profile!');
   res.redirect('back');
 };
