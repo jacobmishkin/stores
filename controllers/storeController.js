@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Store = mongoose.model('Store');
+const User = mongoose.model('User');
 const multer = require('multer');
 const jimp = require('jimp');
 const uuid = require('uuid');
@@ -57,9 +58,10 @@ exports.getStores = async (req, res) => {
 
 const confirmOwner = (store, user) => {
   if (!store.author.equals(user._id)) {
-    throw Error('you must own a store to edit it!');
+    throw Error('You must own a store in order to edit it!');
   }
-}
+};
+
 
 exports.editStore = async (req, res) => {
   // 1. Find the store given the ID
@@ -101,20 +103,24 @@ exports.getStoresByTag = async (req, res) => {
   res.render('tag', { tags, title: 'Tags', tag, stores });
 };
 
+
 exports.searchStores = async (req, res) => {
-  const store = await Store.find({
-    $text: {
-      $search: req.query.q
-    }
-  }, {
-      score: { $meta: 'textScore' }
-    })
+  const stores = await Store
+    // first find stores that match
+    .find({
+      $text: {
+        $search: req.query.q
+      }
+    }, {
+        score: { $meta: 'textScore' }
+      })
+    // the sort them
     .sort({
       score: { $meta: 'textScore' }
     })
-    //limit top 5
+    // limit to only 5 results
     .limit(5);
-  res.json(store);
+  res.json(stores);
 };
 
 exports.mapStores = async (req, res) => {
@@ -126,11 +132,26 @@ exports.mapStores = async (req, res) => {
           type: 'Point',
           coordinates
         },
-        //$maxDistance: 10000
+        $maxDistance: 10000 // 10km
       }
     }
   };
 
-  const stores = await Store.find(q).select('slug name description location').limit(10)
+  const stores = await Store.find(q).select('slug name description location photo').limit(10);
   res.json(stores);
-}
+};
+
+exports.mapPage = (req, res) => {
+  res.render('map', { title: 'Map' });
+};
+
+exports.heartStore = async (req, res) => {
+  const hearts = req.user.hearts.map(obj => obj.toString());
+  const operator = hearts.includes(req.params.id) ? '$pull' : '$addToSet';
+  const user = await User
+    .findByIdAndUpdate(req.user._id,
+      { [operator]: { hearts: req.params.id } },
+      { new: true }
+    );
+  res.json(user);
+};
